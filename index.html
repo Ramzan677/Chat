@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes glow {
+            0% { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 15px #ff00ff; }
+            50% { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; }
+            100% { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 15px #ff00ff; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .glow-text {
+            animation: glow 2s infinite;
+        }
+        
+        .sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        
+        .typing-indicator {
+            display: inline-block;
+            width: 100%;
+            height: 20px;
+            position: relative;
+        }
+        
+        .typing-indicator::after {
+            content: "Thinking...";
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .message {
+            margin: 10px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            line-height: 1.4;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .user-message {
+            background-color: #4f46e5;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .ai-message {
+            background-color: #f3f4f6;
+            color: #111827;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .error-message {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hamburger-line {
+            width: 25px;
+            height: 3px;
+            background-color: white;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .hamburger.active .hamburger-line {
+            transform: rotate(45deg);
+        }
+        
+        .social-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .rainbow-text {
+            background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow 3s linear infinite;
+            background-size: 200% 100%;
+        }
+        
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        
+        .typing-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: #111827;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen text-white">
+    <!-- Hamburger Menu (Single Line) -->
+    <div class="fixed top-4 left-4 z-50">
+        <div class="hamburger cursor-pointer" id="hamburger">
+            <div class="hamburger-line"></div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar fixed top-0 left-0 h-full w-64 bg-gray-800 shadow-lg z-40 p-4" id="sidebar">
+        <div class="flex flex-col h-full">
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-2 text-center rainbow-text">Connect With Us</h2>
+                <div class="h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4"></div>
+            </div>
+            
+            <div class="flex-1 flex flex-col space-y-4">
+                <a href="https://chat.whatsapp.com/LoafyPWMGOv88oElxdwOB8" target="_blank" class="social-btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-all duration-300">
+                    <i class="fab fa-whatsapp mr-2 text-xl"></i> WhatsApp Group
+                </a>
+                
+                <a href="https://whatsapp.com/channel/0029Vb5j7KKBVJl1T9RTk80p" target="_blank" class="social-btn bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-all duration-300">
+                    <i class="fab fa-whatsapp mr-2 text-xl"></i> WhatsApp Channel
+                </a>
+                
+                <a href="https://t.me/Tips0Courses" target="_blank" class="social-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-all duration-300">
+                    <i class="fab fa-telegram mr-2 text-xl"></i> Telegram
+                </a>
+            </div>
+            
+            <div class="mt-auto pt-4 border-t border-gray-700">
+                <p class="text-center text-sm text-gray-400">Stay connected for updates</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-20 max-w-4xl">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 glow-text">AI Chat Assistant</h1>
+            <p class="text-lg rainbow-text">Developed by <span class="font-bold">RAMZAN AHSAN</span></p>
+        </div>
+        
+        <div class="bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+            <!-- Chat Container -->
+            <div id="chat-container" class="h-96 overflow-y-auto p-4 space-y-4 bg-gray-900">
+                <!-- Messages will appear here -->
+                <div class="message ai-message">
+                    Hello! I'm your AI assistant. How can I help you today?
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="p-4 bg-gray-800 border-t border-gray-700">
+                <div class="flex space-x-2">
+                    <textarea 
+                        id="user-input" 
+                        class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none" 
+                        placeholder="Type your message here..." 
+                        rows="1"
+                    ></textarea>
+                    <button 
+                        id="send-button" 
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition duration-200"
+                    >
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+            <button 
+                id="new-chat" 
+                class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200"
+            >
+                <i class="fas fa-plus mr-2"></i> New Chat
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chat-container');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const newChatButton = document.getElementById('new-chat');
+            const hamburger = document.getElementById('hamburger');
+            const sidebar = document.getElementById('sidebar');
+            
+            // Toggle sidebar
+            hamburger.addEventListener('click', function() {
+                this.classList.toggle('active');
+                sidebar.classList.toggle('open');
+            });
+            
+            // Auto-resize textarea
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // Send message on Enter key (but allow Shift+Enter for new line)
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // Send message on button click
+            sendButton.addEventListener('click', sendMessage);
+            
+            // New chat button
+            newChatButton.addEventListener('click', function() {
+                chatContainer.innerHTML = `
+                    <div class="message ai-message">
+                        Hello! I'm your AI assistant. How can I help you today?
+                    </div>
+                `;
+            });
+            
+            // Novita AI configuration
+            const API_KEY = "sk_NBbX6-C52zrf8jAyJMKnAJD29ocVoKUUvtr6sfZ5Sv8";
+            const API_URL = "https://api.novita.ai/v3/openai/chat/completions";
+            const MODEL = "deepseek/deepseek-r1-turbo";
+            
+            async function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+                
+                // Disable input and button while processing
+                userInput.disabled = true;
+                sendButton.disabled = true;
+                
+                // Add user message to chat
+                addMessage('user', message);
+                userInput.value = '';
+                userInput.style.height = 'auto';
+                
+                // Show thinking indicator
+                const thinkingIndicator = document.createElement('div');
+                thinkingIndicator.className = 'message ai-message typing-indicator';
+                chatContainer.appendChild(thinkingIndicator);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                try {
+                    // Call Novita AI API
+                    const response = await fetchNovitaAI(message);
+                    
+                    // Remove thinking indicator
+                    chatContainer.removeChild(thinkingIndicator);
+                    
+                    // Add empty line after thinking
+                    const emptyLine = document.createElement('div');
+                    emptyLine.style.height = '1px';
+                    emptyLine.style.margin = '10px 0';
+                    chatContainer.appendChild(emptyLine);
+                    
+                    // Add AI response with typing effect
+                    await typeMessage('ai', response);
+                } catch (error) {
+                    // Remove thinking indicator
+                    chatContainer.removeChild(thinkingIndicator);
+                    
+                    // Show error message
+                    console.error('API Error:', error);
+                    addMessage('error', error.message);
+                    
+                    // Provide a fallback response
+                    const fallbackResponses = [
+                        "I'm having technical difficulties right now.",
+                        "Please try again later - I'm experiencing connection issues.",
+                        "I can't access my knowledge base at the moment.",
+                        "There seems to be a temporary service interruption."
+                    ];
+                    const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+                    await typeMessage('ai', fallbackResponse);
+                } finally {
+                    // Re-enable input and button
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                    userInput.focus();
+                }
+            }
+            
+            async function typeMessage(sender, text) {
+                return new Promise(resolve => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${sender}-message`;
+                    
+                    // Create cursor element
+                    const cursor = document.createElement('span');
+                    cursor.className = 'typing-cursor';
+                    
+                    // Add empty message with cursor
+                    messageDiv.appendChild(document.createTextNode(''));
+                    messageDiv.appendChild(cursor);
+                    chatContainer.appendChild(messageDiv);
+                    
+                    let i = 0;
+                    const words = text.split(' ');
+                    const typingSpeed = 50; // milliseconds per word
+                    
+                    function typeWriter() {
+                        if (i < words.length) {
+                            // Remove cursor
+                            if (messageDiv.contains(cursor)) {
+                                messageDiv.removeChild(cursor);
+                            }
+                            
+                            // Add next word
+                            messageDiv.appendChild(document.createTextNode((i > 0 ? ' ' : '') + words[i]));
+                            
+                            // Add cursor back
+                            messageDiv.appendChild(cursor);
+                            
+                            i++;
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                            setTimeout(typeWriter, typingSpeed);
+                        } else {
+                            // Remove cursor when done
+                            if (messageDiv.contains(cursor)) {
+                                messageDiv.removeChild(cursor);
+                            }
+                            resolve();
+                        }
+                    }
+                    
+                    typeWriter();
+                });
+            }
+            
+            async function fetchNovitaAI(message) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${API_KEY}`,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: MODEL,
+                            messages: [{
+                                role: "user",
+                                content: message
+                            }],
+                            temperature: 0.7,
+                            max_tokens: 1000,
+                            stream: false
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API Error Response:', errorText);
+                        throw new Error(`API request failed with status ${response.status}`);
+                    }
+                    
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const textResponse = await response.text();
+                        console.error('Non-JSON Response:', textResponse);
+                        throw new Error('Received non-JSON response from server');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                        console.error('Unexpected API Response:', data);
+                        throw new Error('Unexpected response format from API');
+                    }
+                    
+                    return data.choices[0].message.content;
+                } catch (error) {
+                    console.error('Fetch Error:', error);
+                    throw new Error(`Failed to get response: ${error.message}`);
+                }
+            }
+            
+            function addMessage(sender, text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                messageDiv.textContent = text;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=Huiyi67/deep" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
